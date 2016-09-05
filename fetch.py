@@ -13,7 +13,7 @@ from io import StringIO
 from zipfile import ZipFile
 
 BUILD = os.path.join(os.path.dirname(__file__), "build")
-OUT_DIR = os.path.join(os.path.dirname(__file__))
+OUT_DIR = ".\\"
 
 COUNTY_ZCTA = "http://www2.census.gov/geo/docs/maps-data/data/rel/zcta_county_rel_10.txt"
 COUNTY_GEO = "http://www2.census.gov/geo/docs/maps-data/data/gazetteer/Gaz_counties_national.zip"
@@ -68,6 +68,7 @@ def main():
         'state': None,
         'latitude': None,
         'longitude': None,
+		'county_code': None,
         'zip_codes': [],
     })
     # Mapping of zip codes to state and county
@@ -81,11 +82,14 @@ def main():
         counties[fips]['longitude'] = float(lng)
 
     for row in zcta_reader:
-        zcta, _, _, fips = row[0:4]
+        zcta, _, countycode, fips = row[0:4]
+        counties[fips]['county_code'] = countycode
         counties[fips]['zip_codes'].append(zcta)
+		
         zip_codes[zcta] = {
             'state': counties[fips]['state'],
-            'county': counties[fips]['name']
+            'county': counties[fips]['name'],
+			'county_code': counties[fips]['county_code']
         }
 
     if not os.path.exists(OUT_DIR):
@@ -106,7 +110,7 @@ def main():
     # Build a {zip: {county, state} mapping
     zsc = {'zip_state_county': []}
     for zcta, obj in sorted(zip_codes.items()):
-        zsc['zip_state_county'].append([zcta, obj['state'], obj['county']])
+        zsc['zip_state_county'].append([zcta, obj['state'], obj['county'],obj['county_code']])
     zsc['zip_state_county'].sort(key=lambda a: (a[1], a[2]))
     with open(os.path.join(OUT_DIR, "zip_state_county.json"), 'w') as fh:
         json.dump(zsc, fh, indent=0)
